@@ -2,7 +2,8 @@
 #define AFFINE_TRANSFORM_H
 
 #define _USE_MATH_DEFINES
- #include "math.h"
+#include "math.h"
+
 
 double toRad(double degree)
 {
@@ -21,8 +22,8 @@ Matrix<> Translation(double x, double y)
 	double T[9] = {
 		1, 0, x,
 		0, 1, y,
-		0, 0, 1};
-	return Matrix<>(3,3, T);
+		0, 0, 1 };
+	return Matrix<>(3, 3, T);
 }
 Matrix<> Rotation(double degree)
 {
@@ -42,29 +43,17 @@ Matrix<> Scaling(double kx, double ky)
 		0,	0, 1 };
 	return Matrix<>(3, 3, T);
 }
-Matrix<> MirrorX()
+Matrix<> MappingX()
 {
-	double T[9] = {
-		1, 0, 0,
-		0, -1, 0,
-		0, 0, 1 };
-	return Matrix<>(3, 3, T);
+	return Scaling(1, -1);
 }
-Matrix<> MirrorY()
+Matrix<> MappingY()
 {
-	double T[9] = {
-		-1, 0, 0,
-		0, 1, 0,
-		0, 0, 1 };
-	return Matrix<>(3, 3, T);
+	return Scaling(-1, 1);
 }
-Matrix<> MirrorO()
+Matrix<> MappingO()
 {
-	double T[9] = {
-		-1, 0, 0,
-		0, -1, 0,
-		0, 0, 1 };
-	return Matrix<>(3, 3, T);
+	return Scaling(-1, -1);
 }
 // Здесь требуется реализовать функции, возвращающие матрицы базовых АП:
 // Identity() - тождественное АП;

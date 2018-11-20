@@ -4,6 +4,7 @@
 #include "Scene2D.h"
 
 LRESULT _stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);						// прототип оконной процедуры
+Model2D initModel();
 int _stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)		// основная процедура
 {
 	// Первая составляющая часть основной процедуры - создание окна: сначала описывается оконный класс wc, затем создаётся окно hWnd
@@ -43,66 +44,67 @@ int _stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 // В основном модуле объявляется только одна глобальная переменная - создаётся объект класса Scene2D
 // Все дальнейшие действия осуществляются посредством обращения к методам, реализованным в этом классе
-Scene2D scene(L,R,B,T);
+Model2D m = initModel();
+Scene2D scene(L,R,B,T,m);
 
 LRESULT _stdcall WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)		// оконная процедура принимает и обрабатывает все сообщения, отправленные окну
 {
-	switch(msg)
+	switch (msg)
 	{
 	case WM_PAINT:
-		{
-			HDC dc = GetDC(hWnd);
-			scene.Clear(dc);				// Вызов реализованного в классе Camera2D метода, отвечающего за очистку рабочей области окна hWnd
-			scene.Plot(dc, Circle);		// Вызов реализованного в классе Scene2D метода, отвечающего за отрисовку графика синусоиды
-			ReleaseDC(hWnd,dc);
-			return DefWindowProc(hWnd,msg,wParam,lParam);
-		}
+	{
+		HDC dc = GetDC(hWnd);
+		scene.Clear(dc);				// Вызов реализованного в классе Camera2D метода, отвечающего за очистку рабочей области окна hWnd
+		scene.Plot(dc, Circle);		// Вызов реализованного в классе Scene2D метода, отвечающего за отрисовку графика синусоиды
+		ReleaseDC(hWnd, dc);
+		return DefWindowProc(hWnd, msg, wParam, lParam);
+	}
 
 	case WM_SIZE:
-		{
-			HDC dc = GetDC(hWnd);
-			scene.SetResolution(dc);
-			ReleaseDC(hWnd,dc);
-			InvalidateRect(hWnd,nullptr,false);
-			return 0;
-		}
+	{
+		HDC dc = GetDC(hWnd);
+		scene.SetResolution(dc);
+		ReleaseDC(hWnd, dc);
+		InvalidateRect(hWnd, nullptr, false);
+		return 0;
+	}
 
 	case WM_DESTROY:
-		{
-			PostQuitMessage(0);
-			return 0;
-		}
+	{
+		PostQuitMessage(0);
+		return 0;
+	}
 
 	case WM_LBUTTONDOWN:
+	{
+		POINT P;
+		P.x = GET_X_LPARAM(lParam);
+		P.y = GET_Y_LPARAM(lParam);
+		ScreenToClient(hWnd, &P);
+
+		scene.StartDragging(GetDC(hWnd), P.x, P.y);
+		return 0;
+	}
+
+	case WM_MOUSEMOVE:
+	{
+		if (scene.IsDragging())
 		{
 			POINT P;
 			P.x = GET_X_LPARAM(lParam);
 			P.y = GET_Y_LPARAM(lParam);
 			ScreenToClient(hWnd, &P);
 
-			scene.StartDragging(GetDC(hWnd), P.x, P.y);
-			return 0;
+			scene.Drag(P.x, P.y);
+			InvalidateRect(hWnd, nullptr, false);
 		}
-
-	case WM_MOUSEMOVE:
-		{
-			if(scene.IsDragging())
-			{
-				POINT P;
-				P.x = GET_X_LPARAM(lParam);
-				P.y = GET_Y_LPARAM(lParam);
-				ScreenToClient(hWnd, &P);
-
-				scene.Drag(P.x, P.y);
-				InvalidateRect(hWnd, nullptr, false);
-			}
-			return 0;
-		}
+		return 0;
+	}
 	case WM_LBUTTONUP:
-		{
-			scene.StopDragging();
-			return 0;
-		}
+	{
+		scene.StopDragging();
+		return 0;
+	}
 	case WM_MOUSEWHEEL:
 	{
 		scene.Scale((short)HIWORD(wParam) / 120);
@@ -110,10 +112,74 @@ LRESULT _stdcall WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)		// 
 		return 0;
 	}
 
-	default:
+	case WM_KEYDOWN:
+	{
+		switch (wParam)
 		{
-			return DefWindowProc(hWnd,msg,wParam,lParam);
+
+		case VK_LEFT:
+		{
+			scene.m.apply(Translation(-0.5, 0));
+			break;
 		}
+		case VK_RIGHT:
+		{
+			scene.m.apply(Translation(0.5, 0));
+			break;
+		}
+		case VK_UP:
+		{
+			scene.m.apply(Translation(0, 0.5));
+			break;
+		}
+		case VK_DOWN:
+		{
+			scene.m.apply(Translation(0, -0.5));
+			break;
+		}
+		case VK_ADD:
+		{
+			if (GetKeyState(VK_CONTROL) & 0x8000) {
+				scene.m.apply(Scaling(1.5, 1.5));
+			}
+		}
+		case VK_SUBTRACT:
+		{
+			if (GetKeyState(VK_CONTROL) & 0x8000) {
+				scene.m.apply(Scaling(0.9, 0.9));
+			}
+		}
+
+		}
+		InvalidateRect(hWnd, nullptr, false);
+		return 0;
 	}
+	default:
+	{
+		return DefWindowProc(hWnd, msg, wParam, lParam);
+	}
+	
 	return 0;
+	}
+}
+Model2D initModel() {
+
+	double v[15] = {
+		1, 1, 5, 5, 6,
+		4, 1, 1, 4, 11,
+		1, 1, 1, 1, 2
+	};
+	Matrix<> V(3, 5, v);
+
+	int e[25] = {
+		0, 1, 0, 1, 1,
+		1, 0, 1, 0, 0,
+		0, 1, 0, 1, 0,
+		1, 0, 1, 0, 1,
+		1, 0, 0, 1, 0
+	};
+	Matrix<int> E(5, 5, e);
+
+	Model2D m(V, E);
+	return m;
 }

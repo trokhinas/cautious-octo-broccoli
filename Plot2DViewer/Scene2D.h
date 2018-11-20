@@ -10,11 +10,12 @@ class Scene2D : public Camera2D
 {
 private:
 	typedef double (*Func)(double);
-	Model2D m;
+	
 public:
-	Scene2D(double L, double R, double B, double T) : Camera2D(L, R, B, T)
+	Model2D m;
+	Scene2D(double L, double R, double B, double T, Model2D model) : Camera2D(L, R, B, T)
 	{
-		
+		m = model;
 	}
 	void Plot(HDC dc, Func f, bool axes=true)
 	{
@@ -44,32 +45,7 @@ public:
 			LineToIN(dc, x, y);
 		}*/
 
-		double v[15] = {
-		1, 1, 5, 5, 6,
-		4, 1, 1, 4, 11,
-		1, 1, 1, 1, 2
-		};
-		Matrix<> V(3, 5, v);
-
-		double e[25] = {
-			0, 1, 0, 1, 1,
-			1, 0, 1, 0, 0,
-			0, 1, 0, 1, 0,
-			1, 0, 1, 0, 1,
-			1, 0, 0, 1, 0
-		};
-		Matrix<> E(5, 5, e);
-
-		Model2D m(V, E);
-		//m.apply(Translation(0, -1));
-		//m.apply(Rotation(180));
-		//m.apply(MirrorO());
-		//m.apply(Translation(0, 1));
-		//m.apply(MirrorX());
 		Render(m, dc);
-
-		//!!!метод getVertices возвращает уже измененную матрицу, Над этим надо поработать!!!
-		
 	}
 
 	double PolarToDecY(double r, double phi) {
@@ -81,7 +57,7 @@ public:
 	
 	void Render(Model2D m, HDC dc) {
 		Matrix<> Vertices = m.getVertices();
-		Matrix<> Edges = m.getEdges();
+		Matrix<int> Edges = m.getEdges();
 		int points = m.getPoints();
 
 		if (points == 0)
